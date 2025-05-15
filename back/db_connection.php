@@ -1,6 +1,6 @@
 <?php
 $host = 'localhost';
-$db = 'sistema_login';
+$db = 'projeto_diario';
 $user = 'root';  // Usuário do MySQL
 $pass = '';      // Senha do MySQL, geralmente vazio no localhost
 

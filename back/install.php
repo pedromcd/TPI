@@ -1,30 +1,60 @@
 <?php
-include 'db_connection.php';
+$host = 'localhost';
+$user = 'root'; // Altere se necessário
+$pass = '';     // Altere se necessário
 
-// Criação do banco de dados se não existir
-$sql = "CREATE DATABASE IF NOT EXISTS sistema_login";
-$pdo->exec($sql);
+try {
+    // Conecta ao MySQL sem banco definido ainda
+    $pdo = new PDO("mysql:host=$host", $user, $pass);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-// Seleciona o banco de dados
-$pdo->exec("USE sistema_login");
+    // Cria banco de dados
+    $pdo->exec("CREATE DATABASE IF NOT EXISTS sistema_login CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci");
+    echo "✅ Banco de dados 'sistema_login' criado ou já existia.<br>";
 
-// Criação da tabela 'usuarios' se não existir
-$sql = "
-    CREATE TABLE IF NOT EXISTS usuarios (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        email VARCHAR(255) NOT NULL UNIQUE,
-        senha VARCHAR(255) NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )
-";
-$pdo->exec($sql);
+    // Seleciona o banco de dados
+    $pdo->exec("USE sistema_login");
 
-// Inserir um usuário de exemplo
-$email = 'usuario@exemplo.com';
-$senha = password_hash('senha123', PASSWORD_DEFAULT);  // Usando password_hash para segurança
-$sql = "INSERT INTO usuarios (email, senha) VALUES (:email, :senha)";
-$stmt = $pdo->prepare($sql);
-$stmt->execute([':email' => $email, ':senha' => $senha]);
+    // Cria tabela 'usuarios'
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS usuarios (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            nome VARCHAR(100) NOT NULL,
+            email VARCHAR(100) NOT NULL UNIQUE,
+            senha VARCHAR(255) NOT NULL,
+            criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ");
+    echo "✅ Tabela 'usuarios' criada.<br>";
 
-echo "Banco de dados e tabela criados com sucesso!";
+    // Cria tabela 'dailys'
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS dailys (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            usuario_id INT NOT NULL,
+            data DATE NOT NULL,
+            oque_foi_feito TEXT NOT NULL,
+            oque_fara_amanha TEXT NOT NULL,
+            impedimentos TEXT,
+            criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
+        )
+    ");
+    echo "✅ Tabela 'dailys' criada.<br>";
+
+    // Cria tabela 'usuarios_dono' (caso haja relação de dono/liderança)
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS usuarios_dono (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            usuario_id INT NOT NULL,
+            dono_id INT NOT NULL,
+            FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE,
+            FOREIGN KEY (dono_id) REFERENCES usuarios(id) ON DELETE CASCADE
+        )
+    ");
+    echo "✅ Tabela 'usuarios_dono' criada.<br>";
+
+} catch (PDOException $e) {
+    echo "❌ Erro: " . $e->getMessage();
+}
 ?>

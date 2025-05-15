@@ -3,9 +3,9 @@ session_start();
 
 // Configuração de conexão com o banco de dados
 $host = 'localhost';
-$dbname = 'nome_do_banco'; // Substitua pelo nome do seu banco de dados
-$username = 'admin';       // Substitua pelo usuário correto
-$password = 'senha_correta'; // Substitua pela senha correta
+$db = 'projeto_diario';
+$user = 'root';  // Usuário do MySQL
+$pass = '';  // Substitua pela senha correta
 
 // Conexão com o banco de dados
 try {
