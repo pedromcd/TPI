@@ -1,7 +1,7 @@
 import os
-from flask import Flask, request, jsonify
 import sqlite3
 import hashlib
+from flask import Flask, request, jsonify
 from dotenv import load_dotenv
 import firebase_admin
 from firebase_admin import credentials, auth
@@ -9,15 +9,14 @@ from firebase_admin import credentials, auth
 # Carrega variáveis do .env
 load_dotenv()
 
-app = Flask(__name__)
-
-DB_PATH = r"C:\Users\Guilherme\Desktop\AppCadastro\cadastro_clientes.db"
+DB_PATH = os.getenv("DB_PATH")
 FIREBASE_CREDENTIALS_PATH = os.getenv("FIREBASE_CREDENTIALS_PATH")
 
+app = Flask(__name__)
+
 # Inicializa Firebase Admin SDK
-if not firebase_admin._apps:
-    cred = credentials.Certificate(FIREBASE_CREDENTIALS_PATH)
-    firebase_admin.initialize_app(cred)
+cred = credentials.Certificate(FIREBASE_CREDENTIALS_PATH)
+firebase_admin.initialize_app(cred)
 
 def conectar():
     return sqlite3.connect(DB_PATH)
@@ -25,9 +24,7 @@ def conectar():
 def hash_senha(senha):
     return hashlib.sha256(senha.encode()).hexdigest()
 
-# ---------------------------------------
-# REGISTRO DE USUÁRIO (local SQLite)
-# ---------------------------------------
+# Rota para registrar usuário localmente no SQLite
 @app.route('/registro', methods=['POST'])
 def registrar_usuario():
     dados = request.get_json()
@@ -38,15 +35,11 @@ def registrar_usuario():
     if not (nome and email and senha):
         return jsonify({"erro": "Preencha todos os campos"}), 400
 
-    senha_hash = hash_senha(senha)
-
     try:
         with conectar() as conn:
             cursor = conn.cursor()
-            cursor.execute(
-                "INSERT INTO usuarios (nome, email, senha) VALUES (?, ?, ?)",
-                (nome, email, senha_hash)
-            )
+            cursor.execute("INSERT INTO usuarios (nome, email, senha) VALUES (?, ?, ?)",
+                           (nome, email, hash_senha(senha)))
             conn.commit()
         return jsonify({"mensagem": "Usuário registrado com sucesso"}), 201
     except sqlite3.IntegrityError:
@@ -54,38 +47,43 @@ def registrar_usuario():
     except Exception as e:
         return jsonify({"erro": str(e)}), 500
 
-# ---------------------------------------
-# LOGIN via token Firebase (token JWT enviado no header Authorization)
-# ---------------------------------------
+# Rota login que verifica o token Firebase e também o SQLite
 @app.route('/login', methods=['POST'])
 def login():
-    auth_header = request.headers.get('Authorization')
-    if not auth_header:
-        return jsonify({"erro": "Token não fornecido"}), 401
+    dados = request.get_json()
+    email = dados.get("email")
+    senha = dados.get("senha")
+    token_firebase = dados.get("token_firebase")  # Token JWT do Firebase enviado pelo cliente
 
-    token = auth_header.replace("Bearer ", "")
+    if not (email and senha and token_firebase):
+        return jsonify({"erro": "Email, senha e token Firebase são obrigatórios"}), 400
 
+    # Verifica o token Firebase (JWT)
     try:
-        decoded_token = auth.verify_id_token(token)
+        decoded_token = auth.verify_id_token(token_firebase)
         uid = decoded_token['uid']
+    except Exception as e:
+        return jsonify({"erro": f"Token Firebase inválido: {str(e)}"}), 401
 
-        # Procura usuário local no SQLite pelo uid Firebase (campo firebase_uid)
+    # Verifica o usuário no SQLite com email e senha
+    try:
+        senha_hash = hash_senha(senha)
         with conectar() as conn:
             cursor = conn.cursor()
-            cursor.execute("SELECT id, nome, email FROM usuarios WHERE firebase_uid = ?", (uid,))
+            cursor.execute("SELECT id, nome FROM usuarios WHERE email = ? AND senha = ?", (email, senha_hash))
             usuario = cursor.fetchone()
             if usuario:
-                return jsonify({
-                    "mensagem": "Login via Firebase OK",
-                    "usuario_id": usuario[0],
-                    "nome": usuario[1],
-                    "email": usuario[2]
-                }), 200
+                return jsonify({"mensagem": "Login bem-sucedido", "usuario_id": usuario[0], "nome": usuario[1], "firebase_uid": uid}), 200
             else:
-                return jsonify({"erro": "Usuário não cadastrado localmente"}), 401
-
+                return jsonify({"erro": "Credenciais inválidas"}), 401
     except Exception as e:
-        return jsonify({"erro": "Token inválido ou expirado"}), 401
+        return jsonify({"erro": str(e)}), 500
+
+# ... aqui você pode manter as outras rotas que já tinha (lançamentos, saldo etc.)
+
+if __name__ == '__main__':
+    app.run(debug=True)
+
 
 # ---------------------------------------
 # CADASTRAR LANÇAMENTO

@@ -31,17 +31,17 @@ def inicializar_banco():
     ''')
 
     cursor.execute('''
-        CREATE TABLE IF NOT EXISTS lancamentos (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            data TEXT NOT NULL,
-            tipo TEXT CHECK(tipo IN ('entrada', 'saida')) NOT NULL,
-            valor REAL NOT NULL,
-            descricao TEXT,
-            usuario_id INTEGER NOT NULL,
-            FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
-        )
-    ''')
-
+    CREATE TABLE IF NOT EXISTS lancamentos (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        data TEXT NOT NULL,
+        categoria TEXT NOT NULL,
+        valor REAL NOT NULL,
+        descricao TEXT,
+        usuario_id INTEGER NOT NULL,
+        FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+    )
+''')
+    
     conn.commit()
     conn.close()
 

@@ -1,7 +1,8 @@
 import pyrebase
+import os
 
 firebase_config = {
-    "apiKey": "AIzaSyDynKQZw26yAqD1xx6zS9ho_9IWPE1sa68",
+    "apiKey": os.environ.get("FIREBASE_API_KEY"),
     "authDomain": "financecontrolapp-cee78.firebaseapp.com",
     "projectId": "financecontrolapp-cee78",
     "storageBucket": "financecontrolapp-cee78.firebasestorage.app",
