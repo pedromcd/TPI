@@ -1,0 +1,5 @@
+flask
+requests
+tk
+pillow
+sqlite3
