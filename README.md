@@ -1,3 +1,5 @@
+[English](README.en.md) | **Português**
+
 # FinanceControl
 
 **FinanceControl** é um aplicativo desktop de controle financeiro pessoal, desenvolvido com o objetivo de oferecer uma solução simples e eficiente para o registro e acompanhamento de entradas e saídas financeiras. A aplicação foi construída utilizando Python com a biblioteca Tkinter para a interface gráfica e SQLite como banco de dados local, garantindo praticidade e desempenho.
@@ -44,8 +46,8 @@ O foco é na usabilidade e clareza das informações financeiras, com um histór
 ### 2. Instalação
 
 ```bash
-git clone https://github.com/seu-usuario/FinanceControl.git
-cd FinanceControl
+git clone https://github.com/pedromcd/TPI.git
+cd TPI
 ```
 
 Crie e ative um ambiente virtual (opcional):
