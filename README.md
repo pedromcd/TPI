@@ -1,88 +1,169 @@
 [English](README.en.md) | **Português**
 
-# FinanceControl
+# 💰 FinanceControl
 
-**FinanceControl** é um aplicativo desktop de controle financeiro pessoal, desenvolvido com o objetivo de oferecer uma solução simples e eficiente para o registro e acompanhamento de entradas e saídas financeiras. A aplicação foi construída utilizando Python com a biblioteca Tkinter para a interface gráfica e SQLite como banco de dados local, garantindo praticidade e desempenho.
+**Aplicativo de controle financeiro pessoal com interface desktop em Python/Tkinter, banco SQLite e uma API REST em Flask para as mesmas operações.**
 
-## 📋 Índice
+Trabalho em equipe da disciplina de **Tecnologias e Programação Integrada (TPI)**, do curso de Ciência da Computação da UNISAGRADO.
 
-- [Visão Geral do Projeto](#visão-geral-do-projeto)
-- [Funcionalidades](#funcionalidades)
-- [Tecnologias Utilizadas](#tecnologias-utilizadas)
-- [Como Usar](#como-usar)
-- [Créditos](#créditos)
+---
 
-## 📌 Visão Geral do Projeto
+## 🎯 Objetivo
 
-O **FinanceControl** surgiu da necessidade de organizar lançamentos financeiros de forma prática, permitindo que qualquer usuário possa visualizar e controlar seu saldo com facilidade. O sistema contempla uma tela de login, onde usuários podem se autenticar, e uma interface principal com recursos completos para o controle das finanças.
+Criar uma ferramenta simples para registrar entradas e saídas de dinheiro e acompanhar o saldo, praticando ao longo do caminho:
 
-O foco é na usabilidade e clareza das informações financeiras, com um histórico detalhado, cálculo de saldo em tempo real e opções para edição e exclusão de lançamentos.
+- desenvolvimento de **interface gráfica desktop** com Tkinter;
+- **persistência local** com SQLite e SQL parametrizado;
+- **validação de dados** de entrada (datas, valores, campos obrigatórios);
+- exposição das mesmas regras como **API REST** com Flask;
+- **testes automatizados** com `unittest`;
+- empacotamento com **Docker**.
 
-## ✅ Funcionalidades
+---
 
-- **Login de Usuário**: Tela de autenticação segura com senhas criptografadas.
-- **Cadastro de Lançamentos**: Registro de entradas e saídas, com descrição, valor, data e tipo de movimentação.
-- **Visualização de Histórico**: Exibição de todos os lançamentos anteriores com filtros por data e tipo.
-- **Edição e Exclusão**: Lançamentos podem ser modificados ou removidos diretamente do histórico.
-- **Cálculo de Saldo**: Atualização automática do saldo com base nos lançamentos.
-- **Interface Responsiva**: Layout adaptado para resolução 1280x720 com imagem de fundo personalizada.
+## ✨ Funcionalidades
 
-## 🛠 Tecnologias Utilizadas
+### Aplicativo desktop (`cadastro_clientes.py`)
 
-- Python 3
-- Tkinter (interface gráfica)
-- Docker
-- Git e Github
-- SQLite (banco de dados local)
-- `hashlib` (criptografia de senhas)
-- `unittest` (testes automatizados)
+- **Login e cadastro de usuário** em janelas próprias.
+- **Registro de lançamentos** com data (DD/MM/AAAA), categoria (Entrada ou Saída), descrição e valor.
+- **Validação** de campos obrigatórios, formato e existência da data (por exemplo, `31/02` é rejeitado) e valor numérico.
+- **Histórico** em tabela, com **filtros por período** (data inicial e final) e **por categoria**.
+- **Edição e exclusão** do lançamento selecionado.
+- **Saldo** recalculado de acordo com os filtros aplicados.
 
-## ▶️ Como Usar
+### API REST (`api.py`)
 
-### 1. Pré-requisitos
+| Método | Rota | Descrição |
+|---|---|---|
+| `POST` | `/registro` | Cadastra usuário (nome, e-mail, senha com hash SHA-256) |
+| `POST` | `/login` | Autentica por e-mail e senha |
+| `POST` | `/lancamentos` | Cria lançamento vinculado a um usuário |
+| `GET` | `/lancamentos?usuario_id=` | Lista os lançamentos do usuário, do mais recente ao mais antigo |
+| `PUT` | `/lancamentos/<id>` | Atualiza um lançamento |
+| `DELETE` | `/lancamentos/<id>` | Exclui um lançamento |
+| `GET` | `/saldo?usuario_id=` | Calcula o saldo (entradas − saídas) |
 
-- [Python 3](https://www.python.org/downloads/)
+Exemplo:
 
-### 2. Instalação
+```bash
+curl -X POST http://127.0.0.1:5000/lancamentos \
+  -H "Content-Type: application/json" \
+  -d '{"data":"01/01/2024","tipo":"entrada","valor":1000,"descricao":"Salário","usuario_id":1}'
+```
+
+---
+
+## 🗄️ Modelo de dados
+
+O projeto evoluiu em duas etapas e hoje tem **dois esquemas**:
+
+| | Aplicativo desktop | API e testes |
+|---|---|---|
+| Usuários | `usuarios(id, username, senha)` | `usuarios(id, nome, email, senha)` |
+| Lançamentos | `lancamentos(id, data, categoria, descricao, valor)` | `lancamentos(id, data, tipo, valor, descricao, usuario_id)` |
+| Senha | texto puro | hash SHA-256 |
+| Lançamentos por usuário | não | sim (`usuario_id`) |
+
+O banco versionado (`controle_financeiro.db`) segue o esquema do aplicativo desktop e contém apenas dados de teste. O esquema da API é a versão mais completa: vincula cada lançamento a um usuário e restringe `tipo` a `entrada` ou `saida`.
+
+---
+
+## 🛠️ Tecnologias
+
+- **Python 3**
+- **Tkinter / ttk**: interface desktop
+- **SQLite** (`sqlite3`): banco de dados local
+- **Flask**: API REST
+- **hashlib**: hash de senhas na API
+- **unittest**: testes automatizados
+- **Docker**: imagem da API
+
+---
+
+## ▶️ Como executar
+
+### 1. Clonar e instalar
 
 ```bash
 git clone https://github.com/pedromcd/TPI.git
 cd TPI
+pip install flask requests pillow
 ```
 
-Crie e ative um ambiente virtual (opcional):
+> O `requirements.txt` também lista `tk` e `sqlite3`, que já fazem parte da instalação padrão do Python. Por isso, instalar as dependências manualmente, como acima, é o caminho mais seguro.
+
+### 2. Configurar o caminho do banco
+
+Os arquivos usam um caminho absoluto de Windows na constante `DB_PATH`. Antes de executar, altere `DB_PATH` em `cadastro_clientes.py` e em `api.py` para um caminho da sua máquina, por exemplo:
+
+```python
+DB_PATH = "controle_financeiro.db"
+```
+
+### 3. Executar
 
 ```bash
-python -m venv venv
-# Ativação:
-# Windows:
-venv\Scripts\activate
-# macOS/Linux:
-source venv/bin/activate
+python cadastro_clientes.py   # aplicativo desktop
+python api.py                 # API em http://127.0.0.1:5000
 ```
 
-Instale as dependências:
-
-```bash
-pip install -r requirements.txt
-```
-
-### 3. Executando a Aplicação
-
-```bash
-python app.py
-```
-
-### 4. Executando os Testes
+### 4. Testes
 
 ```bash
 python -m unittest test_app.py
 ```
 
-## 👥 Créditos
+Os testes cobrem validação de datas, criação das tabelas, cadastro de usuário, inserção de lançamento e cálculo de saldo no esquema da API.
 
-- Guilherme Borges  
-- Pedro Marques Correa Domingues  
-- Kauê Alcântara  
-- Lucas Borges  
+### Docker (API)
+
+```bash
+docker build -t financecontrol .
+docker run -p 5000:5000 financecontrol
+```
+
+---
+
+## 🧩 Estrutura
+
+```text
+TPI/
+├── cadastro_clientes.py     # Aplicativo desktop (Tkinter): login, lançamentos, histórico, filtros e saldo
+├── api.py                   # API REST (Flask) com o esquema por usuário
+├── test_app.py              # Testes com unittest
+├── controle_financeiro.db   # Banco SQLite de exemplo (dados de teste)
+├── requirements.txt
+└── Dockerfile               # Imagem da API
+```
+
+---
+
+## ⚠️ Limitações conhecidas
+
+Este é um projeto acadêmico e tem pontos que eu corrigiria em uma próxima versão:
+
+- **Dois esquemas de banco:** o aplicativo desktop e a API ainda não compartilham o mesmo modelo de dados.
+- **Senha em texto puro no desktop:** apenas a API aplica hash, e com SHA-256 simples. O ideal seria bcrypt ou Argon2 em ambos.
+- **Caminho do banco fixo** no código, em vez de configurável por variável de ambiente.
+- **Testes acoplados à interface:** `test_app.py` importa `cadastro_clientes.py`, que abre a janela de login ao ser importado.
+- **Docker:** a API usa `app.run()` sem `host="0.0.0.0"`, então precisa desse ajuste para ser acessível fora do container.
+
+## 🚧 Próximos passos
+
+- Unificar o esquema e fazer o aplicativo desktop consumir a API.
+- Separar a lógica de negócio da interface para permitir testes isolados.
+- Configurar o banco por variável de ambiente.
+- Usar bcrypt para senhas e adicionar autenticação por token na API.
+
+---
+
+## 👥 Autores
+
+Projeto em equipe:
+
+- Guilherme Borges
+- Pedro Marques Correa Domingues
+- Kauê Alcântara
+- Lucas Borges
 - Vinicius Trabuco
